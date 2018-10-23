@@ -95,47 +95,47 @@ Note that this module doesn't have the back-end component. It only maps the fron
 
 Inherited methods:
 
-| Method                                                                                                                 | End Point                                                 |
-| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `list(): Promise<ListResponse<T>>`                                                                                     | GET /resource                                             |
-| `get(): Promise<T>`                                                                                                    | GET /resource/:id                                         |
-| `create(res: Resource): Promise<T>`                                                                                    | POST /resource                                            |
-| `update(res: Resource): Promise<T>`                                                                                    | PUT /resource/:id                                         |
-| `patch(res: Resource): Promise<T>`                                                                                     | PATCH /resource/:id                                       |
-| `remove(res: Resource): Promise<T>`                                                                                    | DELETE /resource/:id                                      |
-| `search(searchParams: HttpParams, method: 'get' | 'delete' | 'patch' = 'get', resource?: T): Promise<ListResponse<T>>` | (GET \| PATCH \| DELETE) /resource/search?[:searchParams] |
+| Method                                                                                                                   | End Point                                                 |
+| ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `list(): Promise<ListResponse<T>>`                                                                                       | GET /resource                                             |
+| `get(): Promise<T>`                                                                                                      | GET /resource/:id                                         |
+| `create(res: Resource): Promise<T>`                                                                                      | POST /resource                                            |
+| `update(res: Resource): Promise<T>`                                                                                      | PUT /resource/:id                                         |
+| `patch(res: Resource): Promise<T>`                                                                                       | PATCH /resource/:id                                       |
+| `remove(res: Resource): Promise<T>`                                                                                      | DELETE /resource/:id                                      |
+| `search(searchParams: HttpParams, method: 'get' \| 'delete' \| 'patch' = 'get', resource?: T): Promise<ListResponse<T>>` | (GET \| PATCH \| DELETE) /resource/search?[:searchParams] |
 
 Builder methods (allows you to chain multiple parameters. Requires .get(), .remove(), or .patch() to execute. See GetQuery and SearchQuery below):
 
-| Method                                                                                      | End Point                                                 |
-| ------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `findAll(): GetQuery<T>`                                                                    | GET /resource                                             |
-| `findById(:id): GetQuery<T>`                                                                | GET /resource/:id                                         |
-| `findWhere(field: string, value: string | number | Array<string | number>): SearchQuery<T>` | (GET \| DELETE \| PATCH) /resource/search?[:searchParams] |
+| Method                                                                                        | End Point                                                 |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `findAll(): GetQuery<T>`                                                                      | GET /resource                                             |
+| `findById(:id): GetQuery<T>`                                                                  | GET /resource/:id                                         |
+| `findWhere(field: string, value: string \| number \| Array<string | number>): SearchQuery<T>` | (GET \| DELETE \| PATCH) /resource/search?[:searchParams] |
 
 GetQuery Builder Method Modifiers. Requires `.get()` to execute the chained parameters:
 
-| Method                                         | Example                                                       | Endpoint                                                      |
-| ---------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
-| `only(...fields)`                              | `userService.findAll().only('id', 'name').get();`             | GET /resource?only=id,name                                    |
-|                                                | `userService.findById(123).only('id', 'name').get();`         | GET /resource/123?only=id,name                                |
-| `limit(num: number)`                           | `userService.findAll().limit(100).get();`                     | GET /resource?limit=100                                       |
-| `page(pageNumber: number)`                     | `userService.findAll().limit(100).page(2).get();`             | GET /resource?limit=100&page=2                                |
-| `orderBy(field: string, type: 'asc' | 'desc')` | `userService.findAll().orderBy('name', 'asc').orderBy.get();` | GET /resource?orderBy=[[name,asc],[email,desc]] (url encoded) |
-| `get(): Promise<T | ListResponse<T>>`          | `userService.findAll().get();`                                | GET /resource                                                 |
-|                                                | `userService.findById(123).get();`                            | GET /resource/:id                                             |
+| Method                                          | Example                                                       | Endpoint                                                      |
+| ----------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| `only(...fields)`                               | `userService.findAll().only('id', 'name').get();`             | GET /resource?only=id,name                                    |
+|                                                 | `userService.findById(123).only('id', 'name').get();`         | GET /resource/123?only=id,name                                |
+| `limit(num: number)`                            | `userService.findAll().limit(100).get();`                     | GET /resource?limit=100                                       |
+| `page(pageNumber: number)`                      | `userService.findAll().limit(100).page(2).get();`             | GET /resource?limit=100&page=2                                |
+| `orderBy(field: string, type: 'asc' \| 'desc')` | `userService.findAll().orderBy('name', 'asc').orderBy.get();` | GET /resource?orderBy=[[name,asc],[email,desc]] (url encoded) |
+| `get(): Promise<T \| ListResponse<T>>`          | `userService.findAll().get();`                                | GET /resource                                                 |
+|                                                 | `userService.findById(123).get();`                            | GET /resource/:id                                             |
 
 SearchQuery (extended from GetQuery class so you can use the modifiers above with the following additional methods)
 
 | Method                                                                                                                                      | Example                                                                             | Endpoint                                                         |
 | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `andWhere(field: string, value: string | number)`                                                                                           | `userService.findWhere('first_name', 'abc').andWhere('last_name', '123').get();`    | GET /resource/search?first_name=abc&last_name=123                |
+| `andWhere(field: string, value: string \| number)`                                                                                          | `userService.findWhere('first_name', 'abc').andWhere('last_name', '123').get();`    | GET /resource/search?first_name=abc&last_name=123                |
 |                                                                                                                                             | `userService.findWhere('first_name', 'abc').andWhere('last_name', '123').remove();` | DELETE /resource/search?first_name=abc&last_name=123             |
 | `get(): Promise<ListResponse<T>>` Note: Unlike GetQuery's .get(), SearchQuery's .get() always return a ListResponse due to multiple results | `userService.findWhere('name', 'abc').get();`                                       | GET /resource/search?name=abc                                    |
 | `remove()` Batch DELETE.                                                                                                                    | `userService.findWhere('id', 'abc').remove();`                                      | DELETE /resource/search?id=abc                                   |
 |                                                                                                                                             | `userService.findWhere('id', [1,2,3]).remove();`                                    | DELETE /resource/search?id=1,2,3                                 |
 |                                                                                                                                             | `userService.findWhere('name', ['abc', 'def']).remove();`                           | DELETE /resource/search?name=abc,def                             |
-| `patch(resource: T): Promise<T | ListResponse<T>>` Batch PATCH                                                                              | `userService.findWhere('id', [3, 4]).patch(<User>{is_banned: 1});`                  | PATCH /resource/search?id=3,4 with request body { is_banned: 1 } |
+| `patch(resource: T): Promise<T \| ListResponse<T>>` Batch PATCH                                                                             | `userService.findWhere('id', [3, 4]).patch(<User>{is_banned: 1});`                  | PATCH /resource/search?id=3,4 with request body { is_banned: 1 } |
 
 ## API Mapping Details/Examples
 
@@ -154,7 +154,7 @@ export interface ListResponse<T> {
  * Metadata on response
  */
 export interface ResponseMeta {
-  count?: number;
+  count?: number; // full result count
 }
 ```
 
@@ -162,7 +162,7 @@ With the `ResponseMeta` you can build your UI with paging by offsetting count, p
 
 ### HTTP GET API (GET /resource)
 
-Following conventions for a RESTful service, doing a GET call to `/user` returns multiple results of type User.
+With RESTful service, doing a GET call to `/user` returns multiple results of type User.
 
 ```ts
 // With list() call (GET /user):
