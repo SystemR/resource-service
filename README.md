@@ -199,7 +199,9 @@ To get more detail of a resource you usually call /resource/:id. Calling /user/1
 userService.get(1).then(
   (result: User) => {
     console.log(result);
-    // result at this point has been instantiated with type User and if you have defined methods in your User class it will be available here. See resource.service.spec.ts
+    // result at this point has been instantiated with type User
+    // if you have methods in User class it will be available.
+    // See resource.service.spec.ts
   },
   _ => {}
 );
@@ -221,38 +223,71 @@ Note that the back-end can respond with 200 or 201, and its body can be either {
 
 ### HTTP PUT API for updates (PUT /resource/:id)
 
-To update a resource we usually need to do a PUT call to a specific /resource/id.
+To update a resource we usually need to do a PUT call to a specific /resource/id. Note that in general for PUT you need to send the full object and an empty property could mean you're setting the value to null.
 
 ```ts
-// Let's say user has id: 1
 user.name = 'Hello'; // You want to update the user's name to Hello
 userService.update(user).then((res: User) => {
-  console.log(user); // Should show id: 1, name: Hello
+  console.log(user); // Should show id: 1, name: Hello, ...
 });
 ```
 
 Note that the back-end can respond with 200 or 204 No Content, and its body can be either empty, id only, or the full user resource. `ResourceService` automatically merges the new information to the original user object that is passed in.
 
+### HTTP PATCH API for partial updates (PATCH /resource/:id)
+
+To partially update a resource you can do a PATCH call similar to PUT. But by design a PATCH call only update values that are set in the request body.
+
+```ts
+user.name = 'Hello'; // You want to update the user's name to Hello
+userService.patch(user).then((res: User) => {
+  console.log(user); // Should show id: 1, name: Hello, ...
+});
+
+// or just some property such as refreshing its updated_at
+userService.patch(<User>{
+  id: 1,
+  updated_at: new Date();
+}).then((res: User) => {
+  console.log(user); // Should show id: 1, name: Hello, updated_at: now
+})
+```
+
+### HTTP DELETE API (DELETE /resource/:id)
+
+To delete a resource on the back-end you can do a DELETE call.
+
+```ts
+userService.remove(user).then(_ => {
+  // Then remove the entry from the list
+  this.userList.splice(userList.indexOf(user), 1);
+});
+```
+
 ### Upload API
+
+To use the upload API you need to create a FormData object, and append the files. Here's an example (upon file input change):
 
 ```ts
 onFileChange(event) {
   if (event.target.files.length > 0) {
+    // Generates formData
     const fileList = event.target.files;
     const formData = new FormData();
-    const files = [];
     for (let i = 0, len = fileList.length; i < len; i++) {
       const file = fileList[i];
-      if (file.name.match(/^.*\.json/g)) {
-        formData.append('files', file, file.webkitRelativePath);
-        files.push(file);
-      }
+      formData.append('files', file, file.webkitRelativePath);
     }
-    this.formData = formData;
-    this.files = files;
-  } else {
-    this.formData = null;
-    this.files = [];
+
+    // UserFile is an interface. upload() and uploadFor() do not wrap the response result into a class
+    this.userService.upload(formData).then((res: UserFile) => {
+      console.log(res);
+    });
+
+    // Or uploadFor
+    this.userService.uploadFor(user, formData).then((res: UserFile) => {
+      console.log(res);
+    });
   }
 }
 ```

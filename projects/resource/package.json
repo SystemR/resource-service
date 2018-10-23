@@ -1,6 +1,6 @@
 {
   "name": "@systemr/resource",
-  "description": "ORM like library for RESTful services, inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API Spec",
+  "description": "ORM like library for RESTful services, inspired by EF Core, Eloquent, TypeORM, Swagger, and Yehuda Katz' JSON API Spec",
   "keywords": [
     "angular",
     "orm",

@@ -188,7 +188,7 @@ export class ResourceService {
   }
 
   /**
-   * Search API. Maps to (GET | DELETE | PATCH) /resource/search?field=value using HttpParams
+   * Search API. Maps to (GET | PATCH | DELETE) /resource/search?field=value using HttpParams
    * @param searchParams Query parameters
    * @param method HTTP method to use (only get, patch, delete)
    * @param headers optional HTTP headers
