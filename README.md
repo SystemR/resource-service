@@ -1,27 +1,258 @@
-# ResourceService
+# Resource Service
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 7.0.2.
+Simpler and consistent way to call back-end using ORM like API. Inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
 
-## Development server
+## Install
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+```sh
+$ npm install @systemr/resource --save
+```
 
-## Code scaffolding
+## Simple Usage
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+```ts
+import { Resource, ResourceService, ResourceConfigService } from '@systemr/resource';
 
-## Build
+/**
+ * Have your model extends from Resource
+ */
+class User extends Resource {
+  static basePath = '/user'; // Base path for this model
+  id: number;
+  name: string;
+}
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+/**
+ * Have a service extends from ResourceService
+ */
+@Injectable({
+  providedIn: 'root'
+})
+class UserService extends ResourceService {
+  constructor(injector: Injector) {
+    super(injector, User); // call super() with injector and your model class
+  }
+}
 
-## Running unit tests
+// Then elsewhere in your code you can do:
+userService
+  .findAll()
+  .only('id', 'name')
+  .page(2)
+  .limit(100)
+  .get();
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+// For the following api call:
+// https://api.com/user?only=id,name&page=2&limit=100
 
-## Running end-to-end tests
+// In case your end point is on a different url with CORS, configure ResourceConfigService in AppComponent:
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent implements OnInit {
+  constructor(private resourceConfigService: ResourceConfigService) {
+    resourceConfigService.setBaseUrl('https://api.com');
+  }
+}
+```
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+## Introduction
 
-## Further help
+### Background
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+Previously whenever you need to call an end-point, you create a service and use HttpClient such as the following:
+
+```ts
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+
+@Injectable({
+  providedIn: 'root'
+})
+class HeroService {
+  private heroesUrl = 'api/heroes'; // URL to web api
+
+  constructor(private http: HttpClient) {}
+
+  getHeroes(): Observable<Hero[]> {
+    return this.http.get<Hero[]>(this.heroesUrl);
+  }
+}
+```
+
+Over time this becomes repetitive and can get inconsistent between one end-point to another. For example `VillainService` and `getVillain()`.
+
+### Solution
+
+The goal of ResourceService is consistency and DRY API. Taking advantage of TypeScript's ability to do OO, we can create a Base class for back-end communication services, and save time in writing each method for every HTTP Verb by inheriting from it. The result will also be automatically typed to the model class specified for the service.
+
+So later on, connecting another end-point, let's say `/account`, all that's needed is set up `Account` model, and `userService` that extends from `Resource` and `ResourceService`. Immediately you get the same set of API for CRUD and more: create(), list(), get(), update(), patch(), search(), and upload(). Read more below to learn about each of the API.
+
+Note that this module doesn't have the back-end component. It only maps the front-end to specific url and its expectations upon the result.
+
+## API/Mapping Summary
+
+Inherited methods:
+
+| Method                                                                                                                 | End Point                                                 |
+| ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `list(): Promise<ListResponse<T>>`                                                                                     | GET /resource                                             |
+| `get(): Promise<T>`                                                                                                    | GET /resource/:id                                         |
+| `create(res: Resource): Promise<T>`                                                                                    | POST /resource                                            |
+| `update(res: Resource): Promise<T>`                                                                                    | PUT /resource/:id                                         |
+| `patch(res: Resource): Promise<T>`                                                                                     | PATCH /resource/:id                                       |
+| `remove(res: Resource): Promise<T>`                                                                                    | DELETE /resource/:id                                      |
+| `search(searchParams: HttpParams, method: 'get' | 'delete' | 'patch' = 'get', resource?: T): Promise<ListResponse<T>>` | (GET \| PATCH \| DELETE) /resource/search?[:searchParams] |
+
+Builder methods (allows you to chain multiple parameters. Requires .get(), .remove(), or .patch() to execute. See GetQuery and SearchQuery below):
+
+| Method                                                                                      | End Point                                                 |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `findAll(): GetQuery<T>`                                                                    | GET /resource                                             |
+| `findById(:id): GetQuery<T>`                                                                | GET /resource/:id                                         |
+| `findWhere(field: string, value: string | number | Array<string | number>): SearchQuery<T>` | (GET \| DELETE \| PATCH) /resource/search?[:searchParams] |
+
+GetQuery Builder Method Modifiers. Requires `.get()` to execute the chained parameters:
+
+| Method                                         | Example                                                       | Endpoint                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| `only(...fields)`                              | `userService.findAll().only('id', 'name').get();`             | GET /resource?only=id,name                                    |
+|                                                | `userService.findById(123).only('id', 'name').get();`         | GET /resource/123?only=id,name                                |
+| `limit(num: number)`                           | `userService.findAll().limit(100).get();`                     | GET /resource?limit=100                                       |
+| `page(pageNumber: number)`                     | `userService.findAll().limit(100).page(2).get();`             | GET /resource?limit=100&page=2                                |
+| `orderBy(field: string, type: 'asc' | 'desc')` | `userService.findAll().orderBy('name', 'asc').orderBy.get();` | GET /resource?orderBy=[[name,asc],[email,desc]] (url encoded) |
+| `get(): Promise<T | ListResponse<T>>`          | `userService.findAll().get();`                                | GET /resource                                                 |
+|                                                | `userService.findById(123).get();`                            | GET /resource/:id                                             |
+
+SearchQuery (extended from GetQuery class so you can use the modifiers above with the following additional methods)
+
+| Method                                                                                                                                      | Example                                                                             | Endpoint                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `andWhere(field: string, value: string | number)`                                                                                           | `userService.findWhere('first_name', 'abc').andWhere('last_name', '123').get();`    | GET /resource/search?first_name=abc&last_name=123                |
+|                                                                                                                                             | `userService.findWhere('first_name', 'abc').andWhere('last_name', '123').remove();` | DELETE /resource/search?first_name=abc&last_name=123             |
+| `get(): Promise<ListResponse<T>>` Note: Unlike GetQuery's .get(), SearchQuery's .get() always return a ListResponse due to multiple results | `userService.findWhere('name', 'abc').get();`                                       | GET /resource/search?name=abc                                    |
+| `remove()` Batch DELETE.                                                                                                                    | `userService.findWhere('id', 'abc').remove();`                                      | DELETE /resource/search?id=abc                                   |
+|                                                                                                                                             | `userService.findWhere('id', [1,2,3]).remove();`                                    | DELETE /resource/search?id=1,2,3                                 |
+|                                                                                                                                             | `userService.findWhere('name', ['abc', 'def']).remove();`                           | DELETE /resource/search?name=abc,def                             |
+| `patch(resource: T): Promise<T | ListResponse<T>>` Batch PATCH                                                                              | `userService.findWhere('id', [3, 4]).patch(<User>{is_banned: 1});`                  | PATCH /resource/search?id=3,4 with request body { is_banned: 1 } |
+
+## API Mapping Details/Examples
+
+The sections below would describe how each API is used. Alternatively you can read the `resource.service.spec.ts` to see how each API is used. Note that whenever there are multiple results in the response, they will be wrapped in `ListResponse` interface (this is inspired by the JSON API spec by Yehuda Katz):
+
+```ts
+/**
+ * List Response for list, search and their equivalent query builder method (findAll, findWhere)
+ */
+export interface ListResponse<T> {
+  data?: Array<T>;
+  meta?: ResponseMeta;
+}
+
+/**
+ * Metadata on response
+ */
+export interface ResponseMeta {
+  count?: number;
+}
+```
+
+With the `ResponseMeta` you can build your UI with paging by offsetting count, page, and limit.
+
+### HTTP GET API (GET /resource)
+
+Following conventions for a RESTful service, doing a GET call to `/user` returns multiple results of type User.
+
+```ts
+// With list() call (GET /user):
+userService.list().then((res: ListResponse<User>) => {
+  const users = res.data;
+  const count = res.meta.count;
+
+  if (count > 100) {
+    //Retrieving for the next page is then (using findAll() builder method):
+    userService
+      .findAll()
+      .page(2)
+      .limit(100)
+      .then(
+        (page2Result: ListResponse<User>) => {
+          const page2Users = page2Result.data;
+        },
+        _ => {}
+      );
+    // This does GET /user?page=2&limit=100;
+
+    // To use list() you can do (not recommended):
+    const params = new HttpParams().set('page', '2').set('limit', '1000');
+    userService.list(params);
+  }
+});
+```
+
+### HTTP GET API (GET /resource/:id)
+
+To get more detail of a resource you usually call /resource/:id. Calling /user/1 gives you the user detail of id 1.
+
+```ts
+userService.get(1).then(
+  (result: User) => {
+    console.log(result);
+    // result at this point has been instantiated with type User and if you have defined methods in your User class it will be available here. See resource.service.spec.ts
+  },
+  _ => {}
+);
+```
+
+### HTTP POST API (POST /resource)
+
+To create a resource that needs to be stored in our back-end we need to send a POST request to the resource. With our ResourceService this is easy (Note that back-end can return the full user object, or just the id)):
+
+```ts
+const user = new User();
+user.name = 'Hello';
+userService.create(user).then((res: User) => {
+  console.log(user.id); // Back-end should return back an id of the newly created resource.
+});
+```
+
+Note that the back-end can respond with 200 or 201, and its body can be either { id: 1 } (id only), or { id: 1, name: 'Hello' } (the full user resource). `ResourceService` automatically merges the new information to the original user object that is passed in.
+
+### HTTP PUT API for updates (PUT /resource/:id)
+
+To update a resource we usually need to do a PUT call to a specific /resource/id.
+
+```ts
+// Let's say user has id: 1
+user.name = 'Hello'; // You want to update the user's name to Hello
+userService.update(user).then((res: User) => {
+  console.log(user); // Should show id: 1, name: Hello
+});
+```
+
+Note that the back-end can respond with 200 or 204 No Content, and its body can be either empty, id only, or the full user resource. `ResourceService` automatically merges the new information to the original user object that is passed in.
+
+### Upload API
+
+```ts
+onFileChange(event) {
+  if (event.target.files.length > 0) {
+    const fileList = event.target.files;
+    const formData = new FormData();
+    const files = [];
+    for (let i = 0, len = fileList.length; i < len; i++) {
+      const file = fileList[i];
+      if (file.name.match(/^.*\.json/g)) {
+        formData.append('files', file, file.webkitRelativePath);
+        files.push(file);
+      }
+    }
+    this.formData = formData;
+    this.files = files;
+  } else {
+    this.formData = null;
+    this.files = [];
+  }
+}
+```
