@@ -1,6 +1,6 @@
 # Resource Service
 
-Simpler and consistent way to call back-end using ORM like API. Inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
+Simpler and consistent way to front-end and back-end communication using ORM like API. Inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
 
 ## Install
 
@@ -14,7 +14,7 @@ $ npm install @systemr/resource --save
 import { Resource, ResourceService, ResourceConfigService } from '@systemr/resource';
 
 /**
- * Have your model extends from Resource
+ * Have your model extends Resource
  */
 class User extends Resource {
   static basePath = '/user'; // Base path for this model
@@ -23,7 +23,7 @@ class User extends Resource {
 }
 
 /**
- * Have a service extends from ResourceService
+ * Have the service extends ResourceService
  */
 @Injectable({
   providedIn: 'root'
@@ -36,11 +36,11 @@ class UserService extends ResourceService {
 
 // Then elsewhere in your code you can do:
 userService
-  .findAll()
+  .findAll() // Returns a chainable SearchQuery instance to add parameters
   .only('id', 'name')
   .page(2)
   .limit(100)
-  .get();
+  .get(); // Only when you call get() it will execute
 
 // For the following api call:
 // https://api.com/user?only=id,name&page=2&limit=100
@@ -85,11 +85,15 @@ Over time this becomes repetitive and can get inconsistent between one end-point
 
 ### Solution
 
-The goal of ResourceService is consistency and DRY API. Taking advantage of TypeScript's ability to do OO, we can create a Base class for back-end communication services, and save time in writing each method for every HTTP Verb by inheriting from it. The result will also be automatically typed to the model class specified for the service.
+The goal of ResourceService is to enforce consistency, DRY, and flat API for front-end back-end communication.
 
-So later on, connecting another end-point, let's say `/account`, all that's needed is set up `Account` model, and `userService` that extends from `Resource` and `ResourceService`. Immediately you get the same set of API for CRUD and more: create(), list(), get(), update(), patch(), search(), and upload(). Read more below to learn about each of the API.
+Taking advantage of TypeScript's ability to do OO, we can create a Base class for back-end communication services, and save time in writing each method for every HTTP Verb by inheriting from it. The result will also be automatically typed to the model class specified for the service.
 
-Note that this module doesn't have the back-end component. It only maps the front-end to specific url and its expectations upon the result.
+So later on, connecting another end-point, let's say `/account`, all that's needed is set up `Account` model, and `accountService` that extends from `Resource` and `ResourceService`. Immediately you get the same set of API for CRUD and more: create(), list(), get(), update(), patch(), search(), and upload(). Read below to learn about each of the API.
+
+All the API calls are wrapped in a promise so you can use `async/await`.
+
+Note that this module doesn't have the back-end component. It only maps the front-end to specific url and its expectations upon the result. I'll open source the back-end adapter in the future.
 
 ## API/Mapping Summary
 
@@ -158,11 +162,26 @@ export interface ResponseMeta {
 }
 ```
 
-With the `ResponseMeta` you can build your UI with paging by offsetting count, page, and limit.
+By separating the data and its `ResponseMeta` metadata, you can build your UI with paging by offsetting count, page, and limit (and extend the ResponseMeta with your own metadata).
 
 ### HTTP GET API (GET /resource)
 
 With RESTful service, doing a GET call to `/user` returns multiple results of type User.
+
+Signature:
+
+```ts
+// Single call method
+list<T extends Resource>(
+  params?: HttpParams,
+  headers?: HttpHeaders
+): Promise<ListResponse<T>> {}
+
+// Builder method
+findAll<T extends Resource>(): GetQuery<T> {}
+```
+
+Example:
 
 ```ts
 // With list() call (GET /user):
@@ -172,16 +191,12 @@ userService.list().then((res: ListResponse<User>) => {
 
   if (count > 100) {
     //Retrieving for the next page is then (using findAll() builder method):
-    userService
+    const page2Result: ListResponse<User> = await userService
       .findAll()
       .page(2)
-      .limit(100)
-      .then(
-        (page2Result: ListResponse<User>) => {
-          const page2Users = page2Result.data;
-        },
-        _ => {}
-      );
+      .limit(100);
+
+    const page2Users = page2Result.data;
     // This does GET /user?page=2&limit=100;
 
     // To use list() you can do (not recommended):
@@ -195,6 +210,22 @@ userService.list().then((res: ListResponse<User>) => {
 
 To get more detail of a resource you usually call /resource/:id. Calling /user/1 gives you the user detail of id 1.
 
+Signature:
+
+```ts
+// Single call method
+get<T extends Resource>(
+  id: number | string,
+  params?: HttpParams,
+  headers?: HttpHeaders
+): Promise<T> {}
+
+// Builder method
+findById<T extends Resource>(id: number | string): GetQuery<T> {}
+```
+
+Example:
+
 ```ts
 userService.get(1).then(
   (result: User) => {
@@ -205,11 +236,22 @@ userService.get(1).then(
   },
   _ => {}
 );
+
+// Or
+const user = await userService.findById(1);
 ```
 
 ### HTTP POST API (POST /resource)
 
 To create a resource that needs to be stored in our back-end we need to send a POST request to the resource. With our ResourceService this is easy (Note that back-end can return the full user object, or just the id)):
+
+Signature:
+
+```ts
+create<T extends Resource>(resource: T, headers?: HttpHeaders): Promise<T> {}
+```
+
+Example:
 
 ```ts
 const user = new User();
@@ -225,6 +267,14 @@ Note that the back-end can respond with 200 or 201, and its body can be either {
 
 To update a resource we usually need to do a PUT call to a specific /resource/id. Note that in general for PUT you need to send the full object and an empty property could mean you're setting the value to null.
 
+Signature:
+
+```ts
+update<T extends Resource>(resource: T, params?: HttpParams, headers?: HttpHeaders): Promise<T> {}
+```
+
+Example:
+
 ```ts
 user.name = 'Hello'; // You want to update the user's name to Hello
 userService.update(user).then((res: User) => {
@@ -237,6 +287,14 @@ Note that the back-end can respond with 200 or 204 No Content, and its body can 
 ### HTTP PATCH API for partial updates (PATCH /resource/:id)
 
 To partially update a resource you can do a PATCH call similar to PUT. But by design a PATCH call only update values that are set in the request body.
+
+Signature:
+
+```ts
+patch<T extends Resource>(resource: T, params?: HttpParams, headers?: HttpHeaders): Promise<T> {}
+```
+
+Example:
 
 ```ts
 user.name = 'Hello'; // You want to update the user's name to Hello
@@ -257,11 +315,84 @@ userService.patch(<User>{
 
 To delete a resource on the back-end you can do a DELETE call.
 
+Signature:
+
+```ts
+remove<T extends Resource>(resource: T, params?: HttpParams, headers?: HttpHeaders): Promise<T> {}
+```
+
+Example:
+
 ```ts
 userService.remove(user).then(_ => {
   // Then remove the entry from the list
   this.userList.splice(userList.indexOf(user), 1);
 });
+```
+
+### Search API
+
+Search is added because it's common in projects to be able to search upon a resource and pass parameters.
+
+Signature:
+
+```ts
+search<T extends Resource>(
+    searchParams: HttpParams,
+    method: 'get' | 'patch' | 'delete' = 'get', // Default to get
+    resource?: T, // Only for patch
+    headers?: HttpHeaders
+  ): Promise<ListResponse<T>> {}
+
+// Better way, use builder method
+findWhere<T extends Resource>(
+    field: string,
+    value: number | string | Array<number | string>
+  ): SearchQuery<T> {}
+```
+
+Example:
+
+```ts
+// Do search: https://api.com/user/search?q=123
+userService.search(new HttpParams().set('q', '123')).then(
+  (response: ListResponse<User>) => {
+    const users = response.data;
+  },
+  _ => {}
+);
+
+// Builder method:
+async function nextPage() {
+  const query = userService
+    .findWhere('q', 123)
+    .page(this.page++)
+    .limit(100);
+
+  if (this.orderBy) {
+    query.orderBy(this.orderBy, this.orderByType);
+  }
+
+  const result: ListResponse<User> = await query.get();
+  this.users = result.data;
+}
+```
+
+### Bulk Update or Bulk Delete Using Search API
+
+Using the search API, you can perform bulk delete or bulk patch. For example:
+
+```ts
+userService.findWhere('id', [1, 2, 3]).remove();
+// This sends DELETE request to /user/search?id=1,2,3
+// Back-end at this point knows it needs to delete user id 1, 2, and 3
+
+userService
+  .findWhere('last_name', ['Bauer', 'Ryan'])
+  .patch(<User>{ first_name: 'Jack' })
+  .then(_ => {});
+// This sends: PATCH request to /user/search?last_name=Bauer,Ryan with body { first_name: 'Jack }.
+// Back-end at this point knows it needs to update user with last name Bauer and Ryan and change their first names to be Jack.
 ```
 
 ### Upload API

@@ -1,5 +1,5 @@
-import { HttpParams, HttpRequest } from '@angular/common/http';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import { HttpHeaders, HttpParams, HttpRequest } from '@angular/common/http';
+import { HttpClientTestingModule, HttpTestingController, TestRequest } from '@angular/common/http/testing';
 import { Injectable, Injector } from '@angular/core';
 import { async, inject, TestBed } from '@angular/core/testing';
 
@@ -134,6 +134,22 @@ describe('ResourceService', () => {
       httpMock.verify();
     }));
 
+    it('should do list() (GET /user) with params and headers', async(() => {
+      userService.list(
+        new HttpParams().set('page', '2'),
+        new HttpHeaders().set('no-cache', '1')
+      );
+
+      httpMock.expectOne((req: HttpRequest<any>) => {
+        return (
+          req.method === 'GET' &&
+          req.url === '/user' &&
+          req.headers.get('no-cache') !== undefined
+        );
+      });
+      httpMock.verify();
+    }));
+
     it('should handle findAll() error', async(() => {
       userService
         .findAll()
@@ -221,7 +237,7 @@ describe('ResourceService', () => {
   });
 
   describe('HTTP GET /resource/:id tests', () => {
-    it('should do get (GET /user/:id)', async(() => {
+    it('should do get() (GET /user/:id)', async(() => {
       userService.get(123).then(data => {
         expect(data instanceof User).toBeTruthy();
         expect(data instanceof Resource).toBeTruthy();
@@ -240,7 +256,7 @@ describe('ResourceService', () => {
       httpMock.verify();
     }));
 
-    it('should handle get error when doing get (GET /user/:id)', async(() => {
+    it('should handle get() error when doing get (GET /user/:id)', async(() => {
       userService.get(123).then(
         _ => {
           throw new Error('Should not resolve');
@@ -260,7 +276,7 @@ describe('ResourceService', () => {
       httpMock.verify();
     }));
 
-    it('should do get (GET /user/:id?only=id,name)', async(() => {
+    it('should do get() (GET /user/:id?only=id,name)', async(() => {
       userService
         .findById(123)
         .only('id', 'name')
@@ -269,6 +285,24 @@ describe('ResourceService', () => {
       httpMock.expectOne({
         url: '/user/123?only=id,name',
         method: 'GET'
+      });
+      httpMock.verify();
+    }));
+
+    it('should do get() (GET /user) with params and headers', async(() => {
+      userService.get(
+        123,
+        new HttpParams().set('only', 'id'),
+        new HttpHeaders().set('no-cache', '1')
+      );
+
+      httpMock.expectOne((req: HttpRequest<any>) => {
+        return (
+          req.method === 'GET' &&
+          req.url === '/user/123' &&
+          req.params.get('only') === 'id' &&
+          req.headers.get('no-cache') !== undefined
+        );
       });
       httpMock.verify();
     }));
@@ -295,6 +329,38 @@ describe('ResourceService', () => {
         })
         .flush(user);
 
+      httpMock.verify();
+    }));
+
+    it('should do create() (POST /user) with params and headers', async(() => {
+      const user = new User();
+      user.name = 'hello';
+      userService
+        .create(
+          user,
+          new HttpParams().set('isAdmin', '1'),
+          new HttpHeaders().set('no-cache', '1')
+        )
+        .then(
+          res => {
+            expect(res.id).toBe(123);
+            expect(res instanceof User).toBeTruthy();
+            expect(res instanceof Resource).toBeTruthy();
+          },
+          _ => {}
+        );
+
+      user.id = 123;
+      httpMock
+        .expectOne((req: HttpRequest<any>) => {
+          return (
+            req.method === 'POST' &&
+            req.url === '/user' &&
+            req.params.get('isAdmin') === '1' &&
+            req.headers.get('no-cache') !== undefined
+          );
+        })
+        .flush(user);
       httpMock.verify();
     }));
 
@@ -336,6 +402,36 @@ describe('ResourceService', () => {
         .expectOne({
           url: '/user/123',
           method: 'PUT'
+        })
+        .flush(user);
+      httpMock.verify();
+    }));
+
+    it('should update (PUT /user/:id) with params and headers', async(() => {
+      const user = new User();
+      user.id = 123; // Required
+      user.name = 'World'; // Let's say you change the user's name
+      userService
+        .update(
+          user,
+          new HttpParams().set('force', '1'),
+          new HttpHeaders().set('no-cache', '1')
+        )
+        .then(
+          data => {
+            expect(data).toBe(user);
+          },
+          _ => {}
+        );
+
+      httpMock
+        .expectOne((req: HttpRequest<any>) => {
+          return (
+            req.method === 'PUT' &&
+            req.url === '/user/123' &&
+            req.params.get('force') === '1' &&
+            req.headers.get('no-cache') !== undefined
+          );
         })
         .flush(user);
       httpMock.verify();
@@ -383,6 +479,35 @@ describe('ResourceService', () => {
       httpMock.verify();
     }));
 
+    it('should update (PATCH /user/:id) with headers and params', async(() => {
+      const user = new User();
+      user.id = 123;
+      userService
+        .patch(
+          user,
+          new HttpParams().set('force', '1'),
+          new HttpHeaders().set('no-cache', '1')
+        )
+        .then(
+          data => {
+            expect(data).toBe(user);
+          },
+          _ => {}
+        );
+
+      httpMock
+        .expectOne((req: HttpRequest<any>) => {
+          return (
+            req.method === 'PATCH' &&
+            req.url === '/user/123' &&
+            req.params.get('force') === '1' &&
+            req.headers.get('no-cache') !== undefined
+          );
+        })
+        .flush(user);
+      httpMock.verify();
+    }));
+
     it('should handle PATCH error (PATCH /user/:id)', async(() => {
       const user = new User();
       user.id = 123;
@@ -406,7 +531,7 @@ describe('ResourceService', () => {
   });
 
   describe('HTTP DELETE tests', () => {
-    it('should do remove() (DELETE /user/id', async(() => {
+    it('should do remove() (DELETE /user/id)', async(() => {
       const user = new User();
       user.id = 123;
       userService.remove(user).then(res => {
@@ -424,7 +549,35 @@ describe('ResourceService', () => {
       httpMock.verify();
     }));
 
-    it('should DELETE error (DELETE /user/id', async(() => {
+    it('should do remove() (DELETE /user/id) with params and headers', async(() => {
+      const user = new User();
+      user.id = 123;
+      userService
+        .remove(
+          user,
+          new HttpParams().set('force', '1'),
+          new HttpHeaders().set('no-cache', '1')
+        )
+        .then(res => {
+          expect(res.id).toBe(123);
+          expect(res instanceof User).toBeTruthy();
+          expect(res instanceof Resource).toBeTruthy();
+        });
+
+      httpMock
+        .expectOne((req: HttpRequest<any>) => {
+          return (
+            req.method === 'DELETE' &&
+            req.url === '/user/123' &&
+            req.params.get('force') === '1' &&
+            req.headers.get('no-cache') !== undefined
+          );
+        })
+        .flush(null, { status: 203, statusText: 'No Content' });
+      httpMock.verify();
+    }));
+
+    it('should DELETE error (DELETE /user/id)', async(() => {
       const user = new User();
       user.id = 123;
       userService.remove(user).then(
@@ -607,6 +760,7 @@ describe('ResourceService', () => {
 
     describe('bulk operations using search() (PATCH and DELETE)', () => {
       it('should do search() and patch() (PATCH /user/search?<params>=<value>)', async(() => {
+        let req: TestRequest;
         userService
           .findWhere('id', 123)
           .andWhere('name', 'abc')
@@ -616,19 +770,21 @@ describe('ResourceService', () => {
           .then(
             res => {
               expect(res).toBe(undefined);
+              expect(JSON.stringify(req.request.body)).toBe(
+                JSON.stringify({ name: 'Hello' })
+              );
             },
             _ => {}
           );
 
-        httpMock
-          .expectOne({
-            url: '/user/search?id=123&name=abc',
-            method: 'PATCH'
-          })
-          .flush(null, {
-            status: 204,
-            statusText: 'No Content'
-          });
+        req = httpMock.expectOne({
+          url: '/user/search?id=123&name=abc',
+          method: 'PATCH'
+        });
+        req.flush(null, {
+          status: 204,
+          statusText: 'No Content'
+        });
         httpMock.verify();
       }));
 
@@ -793,7 +949,7 @@ describe('ResourceService', () => {
       httpMock.verify();
     }));
 
-    it('should do uploadFor() for a specific resource (POST /user/123/upload)', async(() => {
+    it('should do uploadFor() (POST /user/123/upload)', async(() => {
       const user = new User();
       user.id = 123;
       userService.uploadFor(user, new FormData()).then(
@@ -816,25 +972,36 @@ describe('ResourceService', () => {
       httpMock.verify();
     }));
 
-    it('should do uploadFor() for a specific resource with multiple files (POST /user/123/upload)', async(() => {
+    it('should do uploadFor() (POST /user/123/upload) with params and headers', async(() => {
       const user = new User();
       user.id = 123;
-      userService.uploadFor(user, new FormData()).then(
-        (res: ListResponse<UserFile>) => {
-          const resources = res.data;
-          expect(resources.length).toBe(2);
-        },
-        err => {
-          throw new Error('should not reject');
-        }
-      );
+      userService
+        .uploadFor(
+          user,
+          new FormData(),
+          new HttpParams().set('type', 'json'),
+          new HttpHeaders().set('no-cache', '1')
+        )
+        .then(
+          (res: ListResponse<UserFile>) => {
+            const resources = res.data;
+            expect(resources.length).toBe(2);
+          },
+          err => {
+            throw new Error('should not reject');
+          }
+        );
 
       // Returns the ids of the newly uploaded resources
       const results = [<UserFile>{ id: 'uuid1' }, <UserFile>{ id: 'uuid2' }];
       httpMock
-        .expectOne({
-          url: '/user/123/upload',
-          method: 'POST'
+        .expectOne((req: HttpRequest<any>) => {
+          return (
+            req.method === 'POST' &&
+            req.url === '/user/123/upload' &&
+            req.params.get('type') === 'json' &&
+            req.headers.get('no-cache') !== undefined
+          );
         })
         .flush({
           data: results,

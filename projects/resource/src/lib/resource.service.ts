@@ -46,6 +46,7 @@ export class ResourceService {
    * Maps to GET /resource
    * @param params other http params
    * @param headers optional HTTP headers
+   * @returns Promise<ListResponse<T>>
    */
   list<T extends Resource>(
     params?: HttpParams,
@@ -76,6 +77,7 @@ export class ResourceService {
    * @param id resource's id
    * @param params other http params
    * @param headers optional HTTP headers
+   * @returns Promise<T>
    */
   get<T extends Resource>(
     id: number | string,
@@ -112,10 +114,15 @@ export class ResourceService {
    * Maps to POST /resource
    * @param resource an instance of type Resource to be created on the back-end
    * @param headers optional HTTP headers
+   * @returns Promise<T>
    */
-  create<T extends Resource>(resource: T, headers?: HttpHeaders): Promise<T> {
+  create<T extends Resource>(
+    resource: T,
+    params?: HttpParams,
+    headers?: HttpHeaders
+  ): Promise<T> {
     return new Promise((res, rej) => {
-      this.http.post(this.apiUrl, resource).subscribe(
+      this.http.post(this.apiUrl, resource, { params, headers }).subscribe(
         (data: T) => {
           Object.assign(resource, data);
           res(resource);
@@ -131,20 +138,27 @@ export class ResourceService {
    * Maps to PUT on /resource/:id
    * @param resource an instance of type Resource to be updated on the back-end
    * @param headers optional HTTP headers
+   * @returns Promise<T>
    */
-  update<T extends Resource>(resource: T, headers?: HttpHeaders): Promise<T> {
+  update<T extends Resource>(
+    resource: T,
+    params?: HttpParams,
+    headers?: HttpHeaders
+  ): Promise<T> {
     return new Promise((res, rej) => {
-      this.http.put(this.apiUrl + '/' + resource.id, resource).subscribe(
-        (data: T) => {
-          if (data) {
-            Object.assign(resource, data);
+      this.http
+        .put(this.apiUrl + '/' + resource.id, resource, { params, headers })
+        .subscribe(
+          (data: T) => {
+            if (data) {
+              Object.assign(resource, data);
+            }
+            res(resource);
+          },
+          err => {
+            rej(err);
           }
-          res(resource);
-        },
-        err => {
-          rej(err);
-        }
-      );
+        );
     });
   }
 
@@ -153,19 +167,25 @@ export class ResourceService {
    * @param resource a partial instance of type Resource to be updated on the back-end
    * @param headers optional HTTP headers
    */
-  patch<T extends Resource>(resource: T, headers?: HttpHeaders): Promise<T> {
+  patch<T extends Resource>(
+    resource: T,
+    params?: HttpParams,
+    headers?: HttpHeaders
+  ): Promise<T> {
     return new Promise((res, rej) => {
-      this.http.patch(this.apiUrl + '/' + resource.id, resource).subscribe(
-        (data: T) => {
-          if (data) {
-            Object.assign(resource, data);
+      this.http
+        .patch(this.apiUrl + '/' + resource.id, resource, { params, headers })
+        .subscribe(
+          (data: T) => {
+            if (data) {
+              Object.assign(resource, data);
+            }
+            res(resource);
+          },
+          err => {
+            rej(err);
           }
-          res(resource);
-        },
-        err => {
-          rej(err);
-        }
-      );
+        );
     });
   }
 
@@ -174,16 +194,22 @@ export class ResourceService {
    * @param resource an instance of type Resource to delete
    * @param headers optional HTTP headers
    */
-  remove<T extends Resource>(resource: T, headers?: HttpHeaders): Promise<T> {
+  remove<T extends Resource>(
+    resource: T,
+    params?: HttpParams,
+    headers?: HttpHeaders
+  ): Promise<T> {
     return new Promise((res, rej) => {
-      this.http.delete(this.apiUrl + '/' + resource.id).subscribe(
-        (data: T) => {
-          res(resource);
-        },
-        err => {
-          rej(err);
-        }
-      );
+      this.http
+        .delete(this.apiUrl + '/' + resource.id, { params, headers })
+        .subscribe(
+          (_: T) => {
+            res(resource);
+          },
+          err => {
+            rej(err);
+          }
+        );
     });
   }
 
@@ -191,15 +217,15 @@ export class ResourceService {
    * Search API. Maps to (GET | PATCH | DELETE) /resource/search?field=value using HttpParams
    * @param searchParams Query parameters
    * @param method HTTP method to use (only get, patch, delete)
-   * @param headers optional HTTP headers
    * @param resource optional partial instance of type Resource to send (when updating multiple for example)
+   * @param headers optional HTTP headers
    */
   search<T extends Resource>(
     searchParams: HttpParams,
     method: 'get' | 'patch' | 'delete' = 'get',
     resource?: T,
     headers?: HttpHeaders
-  ): Promise<ListResponse<T> | undefined> {
+  ): Promise<ListResponse<T>> {
     return new Promise((res, rej) => {
       let httpRequest = null;
 
@@ -264,17 +290,20 @@ export class ResourceService {
    */
   upload<K>(
     formData: FormData,
+    params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<K | ListResponse<K>> {
     return new Promise((res, rej) => {
-      this.http.post(this.apiUrl + '/upload', formData, { headers }).subscribe(
-        (data: K | ListResponse<K>) => {
-          res(data);
-        },
-        err => {
-          rej(err);
-        }
-      );
+      this.http
+        .post(this.apiUrl + '/upload', formData, { params, headers })
+        .subscribe(
+          (data: K | ListResponse<K>) => {
+            res(data);
+          },
+          err => {
+            rej(err);
+          }
+        );
     });
   }
 
@@ -286,11 +315,13 @@ export class ResourceService {
   uploadFor<T extends Resource, K>(
     resource: T,
     formData: FormData,
+    params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<K | ListResponse<K>> {
     return new Promise((res, rej) => {
       this.http
         .post(this.apiUrl + '/' + resource.id + '/upload', formData, {
+          params,
           headers
         })
         .subscribe(
