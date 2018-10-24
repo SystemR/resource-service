@@ -58,6 +58,8 @@ export class AppComponent implements OnInit {
 }
 ```
 
+Note that there is no need to import `ResourceModule` into your project as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes for your app.
+
 ## Introduction
 
 ### Background

@@ -1,10 +1,11 @@
 {
   "name": "resource-service",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && npm run cp",
+    "cp": "cp README.md LICENSE dist/resource",
     "pack": "cd dist/resource && npm pack",
     "package": "npm run build && npm run pack",
     "test": "ng test",
