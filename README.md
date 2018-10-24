@@ -1,6 +1,6 @@
 # Resource Service
 
-Simpler and consistent way to front-end and back-end communication using ORM like API. Inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
+Simpler and consistent way to front-end and back-end communication using ORM-like API for Angular. Inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
 
 ## Install
 
@@ -36,7 +36,7 @@ class UserService extends ResourceService {
 
 // Then elsewhere in your code you can do:
 userService
-  .findAll() // Returns a chainable SearchQuery instance to add parameters
+  .findAll() // Returns a chainable GetQuery instance to add parameters
   .only('id', 'name')
   .page(2)
   .limit(100)
@@ -58,7 +58,7 @@ export class AppComponent implements OnInit {
 }
 ```
 
-Note that there is no need to import `ResourceModule` into your project as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes for your app.
+Note that there is no need to import `ResourceModule` into your project's module, as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes for your app.
 
 ## Introduction
 
@@ -121,15 +121,15 @@ Builder methods (allows you to chain multiple parameters. Requires .get(), .remo
 
 GetQuery Builder Method Modifiers. Requires `.get()` to execute the chained parameters:
 
-| Method                                          | Example                                                       | Endpoint                                                      |
-| ----------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
-| `only(...fields)`                               | `userService.findAll().only('id', 'name').get();`             | GET /resource?only=id,name                                    |
-|                                                 | `userService.findById(123).only('id', 'name').get();`         | GET /resource/123?only=id,name                                |
-| `limit(num: number)`                            | `userService.findAll().limit(100).get();`                     | GET /resource?limit=100                                       |
-| `page(pageNumber: number)`                      | `userService.findAll().limit(100).page(2).get();`             | GET /resource?limit=100&page=2                                |
-| `orderBy(field: string, type: 'asc' \| 'desc')` | `userService.findAll().orderBy('name', 'asc').orderBy.get();` | GET /resource?orderBy=[[name,asc],[email,desc]] (url encoded) |
-| `get(): Promise<T \| ListResponse<T>>`          | `userService.findAll().get();`                                | GET /resource                                                 |
-|                                                 | `userService.findById(123).get();`                            | GET /resource/:id                                             |
+| Method                                          | Example                                                                       | Endpoint                                                      |
+| ----------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `only(...fields)`                               | `userService.findAll().only('id', 'name').get();`                             | GET /resource?only=id,name                                    |
+|                                                 | `userService.findById(123).only('id', 'name').get();`                         | GET /resource/123?only=id,name                                |
+| `limit(num: number)`                            | `userService.findAll().limit(100).get();`                                     | GET /resource?limit=100                                       |
+| `page(pageNumber: number)`                      | `userService.findAll().limit(100).page(2).get();`                             | GET /resource?limit=100&page=2                                |
+| `orderBy(field: string, type: 'asc' \| 'desc')` | `userService.findAll().orderBy('name', 'asc').orderBy('email','desc').get();` | GET /resource?orderBy=[[name,asc],[email,desc]] (url encoded) |
+| `get(): Promise<T \| ListResponse<T>>`          | `userService.findAll().get();`                                                | GET /resource                                                 |
+|                                                 | `userService.findById(123).get();`                                            | GET /resource/:id                                             |
 
 SearchQuery (extended from GetQuery class so you can use the modifiers above with the following additional methods)
 
@@ -423,4 +423,61 @@ onFileChange(event) {
     });
   }
 }
+```
+
+## GetQuery modifiers
+
+Whenever you use the builder method `findAll()` and `findById()` they return a new instance of GetQuery that allows you to chain additional parameters.
+
+### only(...fields: string)
+
+only(...fields) allows you to inform the back-end that you only need certain fields returned for that request. This would allow the back-end to optimize the DB `select` query and save on network for its response.
+
+```ts
+class User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  age: number;
+  ...
+}
+const users = await userService.findAll().only('id', 'firstName', 'age').get();
+```
+
+If another component needs to display lastName only, then that component would call `userService.findAll().only('id', 'lastName')` without affecting the component that renders list of user's age. This way you don't need a separate method in your service for getting list of users' first name and age, and for list of user's lastName.
+
+### page(num: number) and limit(num: number)
+
+page() and limit() allows you to pass limit and offset request for your back-end's DB query.
+
+```ts
+userService
+  .findAll()
+  .limit(100)
+  .page(2)
+  .get();
+```
+
+### orderBy(field: string, type: 'asc' | 'desc' = 'asc')
+
+orderBy allows you to pass `&orderBy=` parameter to the back-end. Note that the values are URL encoded.
+
+```ts
+userService.findAll().orderBy('name', 'asc').orderBy('email', 'desc').get();`
+// GET /resource?orderBy=[[name,asc],[email,desc]] (%5B%5Bname%2Casc%5D%2C%5Bemail%2Cdesc%5D%5D) URL encoded
+```
+
+## SearchQuery modifiers
+
+### andWhere(field: string, value: string \| number)
+
+andWhere() is only available after a findWhere() (it returns a new SearchQuery instance). This allows you to add more search parameters into your request.
+
+```ts
+userService
+  .findWhere('first_name', 'abc')
+  .andWhere('last_name', '123')
+  .andWhere('age', '>33')
+  .get();
+// GET /resource/search?first_name=abc&last_name=123&age=%3E33
 ```
