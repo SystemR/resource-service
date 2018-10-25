@@ -13,7 +13,7 @@ const result: ListResponse<User> = await userService
 const users = result.data;
 
 // Or
-const user = await userService.findById(1).get(); // Auto-wrap to object of User type
+const user = await userService.findById(1).get(); // Auto-wrap to object of type User
 user.getFullName(); // Outputs: firstName lastNAme
 ```
 
@@ -73,7 +73,7 @@ export class AppComponent implements OnInit {
 }
 ```
 
-Note: There is `ResourceModule` in the package. However, there is no need to import `ResourceModule` into your project's module as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes. `ResourceConfigService` has `providedIn: 'root'` and only need to be added to your providers for pre-Angular 6 apps.
+There is `ResourceModule` in the package. However, there is no need to import `ResourceModule` into your project's module as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes. `ResourceConfigService` has `providedIn: 'root'` and only need to be added to your providers for pre-Angular 6 apps.
 
 ## Introduction
 
@@ -106,11 +106,11 @@ The goal of ResourceService is to enforce consistency, DRY, and flat API for fro
 
 Taking advantage of TypeScript's ability to do OO, we can create a Base class for back-end communication services, and save time in writing each method for every HTTP Verb by inheriting from it. The result will also be automatically typed to the model class specified for the service.
 
-So later on, connecting another end-point, let's say `/account`, all that's needed is set up `Account` model, and `accountService` that extends from `Resource` and `ResourceService`. Immediately you get the same set of API for CRUD and more: create(), list(), get(), update(), patch(), search(), and upload(). Read below to learn about each of the API.
+Later on, to connect to a RESTful endpoint, say `/account`, all that's needed is set up `Account` model, and `AccountService` that extends from `Resource` and `ResourceService`, and immediately get the same set of API for CRUD and more: create(), list(), get(), update(), patch(), search(), and upload(). Read below to learn about how each of the methods map to the URL.
 
-All the API calls are wrapped in a promise so you can use `async/await`.
+All the calls are also wrapped in a promise so you can use `async/await`.
 
-Note that this module doesn't have the back-end component. It only maps the front-end to specific url and its expectations upon the result. I'll open source the back-end adapter in the future.
+Note that this module doesn't have the back-end part. It only maps AJAX calls to specific url and have certain expectations with the result.
 
 ## API/Mapping Summary
 
