@@ -4,16 +4,17 @@ Simpler and consistent way for front-end and back-end communication using ORM-li
 
 ```ts
 // Call your ajax like this:
-const users = await userService
+const result: ListResponse<User> = await userService
   .findAll()
   .only('id', 'name')
   .page(2)
   .limit(100)
   .get();
+const users = result.data;
 
 // Or
-const user = await userService.findById(1).get();
-user.getName(); // Outputs: firstName lastNAme
+const user = await userService.findById(1).get(); // Auto-wrap to object of User type
+user.getFullName(); // Outputs: firstName lastNAme
 ```
 
 ## Install
@@ -25,7 +26,7 @@ $ npm install @systemr/resource --save
 ## Simple Usage
 
 ```ts
-import { Resource, ResourceService, ResourceConfigService } from '@systemr/resource';
+import { Resource, ResourceConfigService, ResourceService } from '@systemr/resource';
 
 /**
  * Have your model extends Resource
