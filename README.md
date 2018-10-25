@@ -185,8 +185,6 @@ By separating the data and its `ResponseMeta` metadata, you can build your UI wi
 
 With RESTful service, doing a GET call to `/user` returns multiple results of type User.
 
-Signature:
-
 ```ts
 // Single call method
 list<T extends Resource>(
@@ -203,7 +201,7 @@ Example:
 ```ts
 // With list() call (GET /user):
 userService.list().then((res: ListResponse<User>) => {
-  const users = res.data;
+  const users: User[] = res.data;
   const count = res.meta.count;
 
   if (count > 100) {
@@ -211,14 +209,15 @@ userService.list().then((res: ListResponse<User>) => {
     const page2Result: ListResponse<User> = await userService
       .findAll()
       .page(2)
-      .limit(100);
+      .limit(100)
+      .get();
 
-    const page2Users = page2Result.data;
+    let page2Users = page2Result.data;
     // This does GET /user?page=2&limit=100;
 
-    // To use list() you can do (not recommended):
+    // To use list():
     const params = new HttpParams().set('page', '2').set('limit', '1000');
-    userService.list(params);
+    page2Users = userService.list(params);
   }
 });
 ```
@@ -226,8 +225,6 @@ userService.list().then((res: ListResponse<User>) => {
 ### HTTP GET API (GET /resource/:id)
 
 To get more detail of a resource you usually call /resource/:id. Calling /user/1 gives you the user detail of id 1.
-
-Signature:
 
 ```ts
 // Single call method
@@ -255,14 +252,12 @@ userService.get(1).then(
 );
 
 // Or
-const user = await userService.findById(1);
+const user = await userService.findById(1).get();
 ```
 
 ### HTTP POST API (POST /resource)
 
 To create a resource that needs to be stored in our back-end we need to send a POST request to the resource. With our ResourceService this is easy (Note that back-end can return the full user object, or just the id)):
-
-Signature:
 
 ```ts
 create<T extends Resource>(resource: T, headers?: HttpHeaders): Promise<T> {}
@@ -284,8 +279,6 @@ Note that the back-end can respond with 200 or 201, and its body can be either {
 
 To update a resource we usually need to do a PUT call to a specific /resource/id. Note that in general for PUT you need to send the full object and an empty property could mean you're setting the value to null.
 
-Signature:
-
 ```ts
 update<T extends Resource>(resource: T, params?: HttpParams, headers?: HttpHeaders): Promise<T> {}
 ```
@@ -304,8 +297,6 @@ Note that the back-end can respond with 200 or 204 No Content, and its body can 
 ### HTTP PATCH API for partial updates (PATCH /resource/:id)
 
 To partially update a resource you can do a PATCH call similar to PUT. But by design a PATCH call only update values that are set in the request body.
-
-Signature:
 
 ```ts
 patch<T extends Resource>(resource: T, params?: HttpParams, headers?: HttpHeaders): Promise<T> {}
@@ -332,8 +323,6 @@ userService.patch(<User>{
 
 To delete a resource on the back-end you can do a DELETE call.
 
-Signature:
-
 ```ts
 remove<T extends Resource>(resource: T, params?: HttpParams, headers?: HttpHeaders): Promise<T> {}
 ```
@@ -350,8 +339,6 @@ userService.remove(user).then(_ => {
 ### Search API
 
 Search is added because it's common in projects to be able to search upon a resource and pass parameters.
-
-Signature:
 
 ```ts
 search<T extends Resource>(
