@@ -12,8 +12,8 @@ const users = await userService
   .get();
 
 // Or
-const user = await userService.findById(1);
-user.getName();
+const user = await userService.findById(1).get();
+user.getName(); // Outputs: firstName lastNAme
 ```
 
 ## Install
