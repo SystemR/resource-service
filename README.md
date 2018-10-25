@@ -1,6 +1,20 @@
 # Resource Service
 
-Simpler and consistent way to front-end and back-end communication using ORM-like API for Angular. Inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
+Simpler and consistent way for front-end and back-end communication using ORM-like API for Angular, with async/await. Inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
+
+```ts
+// Call your ajax like this:
+const users = await userService
+  .findAll()
+  .only('id', 'name')
+  .page(2)
+  .limit(100)
+  .get();
+
+// Or
+const user = await userService.findById(1);
+user.getName();
+```
 
 ## Install
 
@@ -58,7 +72,7 @@ export class AppComponent implements OnInit {
 }
 ```
 
-Note that there is no need to import `ResourceModule` into your project's module, as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes for your app.
+Note: There is ResourceModule in the package. However, there is no need to import `ResourceModule` into your project's module as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes. ResourceConfigService is has providedIn root and possibly need to be declared for pre-angular 6.
 
 ## Introduction
 
