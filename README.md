@@ -6,7 +6,7 @@ Simpler and consistent way for front-end and back-end communication using ORM-li
 // Call your ajax like this:
 const result: ListResponse<User> = await userService
   .findAll()
-  .only('id', 'name')
+  .only('id', 'firstName')
   .page(2)
   .limit(100)
   .get();
