@@ -1,6 +1,6 @@
 # Resource Service
 
-Simpler and consistent way for front-end and back-end communication using ORM-like API for Angular, with async/await. Inspired by EF Core, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
+Simpler and consistent way for front-end and back-end communication using ORM-like API for Angular, with async/await. Inspired by EF Core, GORM, Eloquent, TypeORM, Swagger, and JSON API spec [https://jsonapi.org](https://jsonapi.org).
 
 ```ts
 // Call your ajax like this:
