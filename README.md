@@ -73,7 +73,7 @@ export class AppComponent implements OnInit {
 }
 ```
 
-Note: There is ResourceModule in the package. However, there is no need to import `ResourceModule` into your project's module as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes. ResourceConfigService is has providedIn root and possibly need to be declared for pre-angular 6.
+Note: There is `ResourceModule` in the package. However, there is no need to import `ResourceModule` into your project's module as there are no concrete classes or components to be imported. ResourceService only provides interfaces and base classes. `ResourceConfigService` has `providedIn: 'root'` and only need to be added to your providers for pre-Angular 6 apps.
 
 ## Introduction
 
