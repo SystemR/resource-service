@@ -1,12 +1,14 @@
 {
   "name": "@systemr/resource",
   "description": "ORM-like API library for RESTful communication in Angular. Inspired by EF Core, Eloquent, TypeORM, Swagger, and Yehuda Katz' JSON API Spec",
-  "author": "Randy Wenas",
+  "author": "Randy Wenas <r@rwenas.com> (https://rwenas.com)",
   "keywords": [
     "angular",
     "orm",
     "rest",
-    "api"
+    "api",
+    "http",
+    "ajax"
   ],
   "homepage": "https://github.com/SystemR/resource-service",
   "repository": {
@@ -17,7 +19,7 @@
     "url": "https://github.com/SystemR/resource-service/issues"
   },
   "license": "MIT",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "peerDependencies": {
     "@angular/common": "^7.0.0",
     "@angular/core": "^7.0.0"
