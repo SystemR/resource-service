@@ -1,9 +1,18 @@
 import { HttpHeaders, HttpParams, HttpRequest } from '@angular/common/http';
-import { HttpClientTestingModule, HttpTestingController, TestRequest } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+  TestRequest
+} from '@angular/common/http/testing';
 import { Injectable, Injector } from '@angular/core';
 import { async, inject, TestBed } from '@angular/core/testing';
 
-import { ListResponse, Resource, ResourceConfigService, ResourceService } from '../public_api';
+import {
+  ListResponse,
+  Resource,
+  ResourceConfigService,
+  ResourceService
+} from '../public_api';
 
 /**
  * Sample Model extending from Resource

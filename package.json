@@ -1,6 +1,6 @@
 {
   "name": "resource-service",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -12,6 +12,11 @@
     "serve:coverage": "pushstate-server ./coverage",
     "lint": "ng lint",
     "e2e": "ng e2e"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
   },
   "private": true,
   "dependencies": {
@@ -38,6 +43,7 @@
     "@types/jasminewd2": "~2.0.3",
     "@types/node": "~8.9.4",
     "codelyzer": "~4.5.0",
+    "husky": "^1.1.2",
     "jasmine-core": "~2.99.1",
     "jasmine-spec-reporter": "~4.2.1",
     "karma": "~3.0.0",
@@ -47,6 +53,8 @@
     "karma-jasmine-html-reporter": "^0.2.2",
     "karma-mocha-reporter": "^2.2.5",
     "ng-packagr": "^4.2.0",
+    "prettier": "^1.14.3",
+    "pretty-quick": "^1.8.0",
     "protractor": "~5.4.0",
     "pushstate-server": "^3.0.1",
     "ts-node": "~7.0.0",
