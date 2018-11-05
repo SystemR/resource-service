@@ -500,7 +500,7 @@ HTTP GET /user/<id>/follower/<fid>       // To get info on a specific follower
 This is simple enough but potentially the API can grow into something like this:
 
 ```
-HTTP GET or POST /user/<id>/follower/<fid>/ban       // To ban a specific follower
+HTTP GET or POST /user/<id>/follower/<fid>/ban        // To ban a specific follower
 
 // or on legacy software for IE6
 HTTP GET or POST /user/<id>/follower/<fid>/ban/remove // To unban a specific folllower
@@ -513,7 +513,7 @@ With flat API I've found discovering features simply requires looking at the roo
 ```rb
 resources :user
 resources :follower
-resources :ban-follower
+resources :ban_follower, as: "ban-follower"
 ```
 
 Then potentially I can perform the following calls:
