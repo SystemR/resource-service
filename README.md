@@ -26,7 +26,11 @@ $ npm install @systemr/resource --save
 ## Simple Usage
 
 ```ts
-import { Resource, ResourceConfigService, ResourceService } from '@systemr/resource';
+import {
+  Resource,
+  ResourceConfigService,
+  ResourceService
+} from '@systemr/resource';
 
 /**
  * Have your model extends Resource
@@ -483,3 +487,56 @@ userService
   .get();
 // GET /resource/search?first_name=abc&last_name=123&age=%3E33
 ```
+
+## Flat API (an opinion)
+
+After using several back-end frameworks and working on various old and new projects, I've found having a flat API simplifies routing configurations and their guards. Previously I have seen deeply nested path which makes it harder for service discovery and managing their security structure. For example, some API path might look like the following:
+
+```
+HTTP GET /user/<id>/follower             // To get a list of followers for user <id>
+HTTP GET /user/<id>/follower/<fid>       // To get info on a specific follower
+```
+
+This is simple enough but potentially the API can grow into something like this:
+
+```
+HTTP GET or POST /user/<id>/follower/<fid>/ban       // To ban a specific follower
+
+// or on legacy software for IE6
+HTTP GET or POST /user/<id>/follower/<fid>/ban/remove // To unban a specific folllower
+```
+
+Then let's say you want to prohibit doing GET to `/user/<id>` or you want to refactor that call to `/me`. It will become necessary to refactor the `/user/<id>/follower/<fid>/<action>/<sub-action>` route configuration and its handlers to prevent API leakage.
+
+With flat API I've found discovering features simply requires looking at the root paths of the router configuration (for example in rails):
+
+```rb
+resources :user
+resources :follower
+resources :ban-follower
+```
+
+Then potentially I can perform the following calls:
+
+```
+HTTP GET /follower/search?user=<id>                       // To get a list of followers for user <id>
+HTTP GET /follower/<fid>                                  // Get follower id assuming fid is unique (with uuid)
+HTTP GET /follower/search?user=<id>&follower=<fid>        // Or if not unique
+HTTP POST /ban-follower/search?user=<id>&follower=<fid>   // CREATE ban-follower action where user <id> and follower <fId>
+```
+
+Notice that to ban a follower it calls a POST (Create) to `/ban-follower/search?user=<id>&follower=<id>`. I've found this better than a POST or GET to the nested `/user/<id>/follower/<id>/ban` for the following reasons:
+
+- With the former, HTTP POST verb becomes unambiguous. It is called to _CREATE_ something. The call then becomes _create an entry for `ban-follower` for user `<id>` and follower `<fid>`_.
+- To remove a ban you just need to call the same URL and do HTTP DELETE. This call becomes _remove an entry for ban-follower for user `<id>` and follower `<fid>`_.
+- If later I want to remove the ability to ban followers I can just kill the route or the class that handles it (usually results in automatic 404). With the latter you'll probably have to find the method that bans followers inside some class (or a leak if you forget).
+- To fully conform with HTTP standards, your BaseController can return `501 Not Implemented` for HTTP verbs that have not been implemented or should not be handled (like a PUT or PATCH on `ban-follower`).
+
+This convention also simplifies some routes. For example, instead of `/login` or `/logout`, you can expose `/token`.
+
+```
+HTTP POST /token        // Login with username and password as request body, returns a token
+HTTP DELETE /token      // Destroys a token, i.e token is invalid, user is logged out.
+```
+
+Pairing RsourceService with this convention makes it easy to wire up a back-end API urls and have the responses properly typed.

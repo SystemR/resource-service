@@ -1,0 +1,37 @@
+/**
+ * Sample protobuf for a resource
+ */
+
+syntax = "proto3";
+
+package resource;
+
+service ResourceService {
+  rpc List (Empty) returns (ListResponse) {}
+  rpc Get (ResourceIdRequest) returns (Resource) {}
+  rpc Create (Resource) returns (Resource) {}
+  rpc Update (Resource) returns (Empty) {}
+  rpc Patch (Resource) returns (Empty) {}
+  rpc Delete (ResourceIdRequest) returns (Empty) {}
+}
+
+message Empty {}
+
+message Resource {
+  uint32 id = 1;
+  // Other fields
+  // ...
+}
+
+message ResourceIdRequest {
+  uint32 id = 1;
+}
+
+message ListResponse{
+  repeated Resource data = 1;
+  Meta meta = 2;
+}
+
+message Meta {
+  int32 count = 1;
+}
