@@ -502,7 +502,7 @@ This is simple enough but potentially the API can grow into something like this:
 ```
 HTTP GET or POST /user/<id>/follower/<fid>/ban        // To ban a specific follower
 
-// or on legacy software for IE6
+// or on legacy software for IE6 or Opera Mini
 HTTP GET or POST /user/<id>/follower/<fid>/ban/remove // To unban a specific folllower
 ```
 
