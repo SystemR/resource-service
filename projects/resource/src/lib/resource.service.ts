@@ -335,7 +335,7 @@ export class ResourceService {
     });
   }
 
-  private generateListResponse<T extends Resource>(result): ListResponse<T> {
+  generateListResponse<T extends Resource>(result): ListResponse<T> {
     if (result.data) {
       const items: Array<T> = [];
       for (const row of result.data) {
