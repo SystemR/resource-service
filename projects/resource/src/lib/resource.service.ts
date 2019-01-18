@@ -18,7 +18,7 @@ import { ListResponse } from './resource-interfaces';
  */
 export class ResourceService {
   public apiUrl: string;
-  private http: HttpClient;
+  public http: HttpClient;
 
   constructor(injector: Injector, private modelClass: any) {
     this.http = injector.get(HttpClient);
