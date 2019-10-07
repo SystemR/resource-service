@@ -32,6 +32,7 @@ export class GetQuery<T extends Resource> {
   orderByFields: Array<OrderBy> = [];
 
   headers: { [key: string]: string | string[] } = {};
+  additionalParams: { [key: string]: string | string[] } = {};
 
   constructor(getHandler: Function, id?: number | string) {
     this.getHandler = getHandler;
@@ -63,6 +64,11 @@ export class GetQuery<T extends Resource> {
     return this;
   }
 
+  param(key: string, value: string | string[]): GetQuery<T> {
+    this.additionalParams[key] = value;
+    return this;
+  }
+
   fresh(): GetQuery<T> {
     this.headers['no-cache'] = '1';
     return this;
@@ -89,6 +95,14 @@ export class GetQuery<T extends Resource> {
       }
       params = params.set('order', JSON.stringify(orderByArray));
     }
+
+    const additionalParams = this.additionalParams;
+    const additionalParamKeys = Object.keys(additionalParams);
+    if (additionalParamKeys.length > 0) {
+      for (const key of additionalParamKeys) {
+        params = params.set(key, additionalParams[key].toString());
+      }
+    }
     return params;
   }
 
@@ -105,6 +119,10 @@ export class GetQuery<T extends Resource> {
     return null;
   }
 
+  /**
+   * Execute the get request on the GetQuery object
+   * @returns Promise<T | ListResponse<T>>
+   */
   get(): Promise<T | ListResponse<T>> {
     const params = this.getHttpParams();
     const headers = this.getHttpHeaders();
@@ -123,9 +141,9 @@ export class SearchQuery<T extends Resource> extends GetQuery<T> {
   searchHandler: Function;
 
   constructor(
+    searchHandler: Function,
     field: string,
-    value: number | string | Array<number | string>,
-    searchHandler: Function
+    value: number | string | Array<number | string>
   ) {
     super(searchHandler);
     this.searchParams.push({

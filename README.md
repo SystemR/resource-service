@@ -147,6 +147,9 @@ GetQuery Builder Method Modifiers. Requires `.get()` to execute the chained para
 | `limit(num: number)`                            | `userService.findAll().limit(100).get();`                                     | GET /resource?limit=100                                       |
 | `page(pageNumber: number)`                      | `userService.findAll().limit(100).page(2).get();`                             | GET /resource?limit=100&page=2                                |
 | `orderBy(field: string, type: 'asc' \| 'desc')` | `userService.findAll().orderBy('name', 'asc').orderBy('email','desc').get();` | GET /resource?orderBy=[[name,asc],[email,desc]] (url encoded) |
+| `header()`                                      | `userService.findAll().header('Authorization', 'bearer token').get();`        | GET /resource with header Authorization                       |
+| `param()`                                       | `userService.findAll().param('q', '123').get();`                              | GET /resource?q=123                                           |
+| `fresh()`                                       | `userService.findAll().fresh().get();`                                        | GET /resource with header no-cache with value '1'             |
 | `get(): Promise<T \| ListResponse<T>>`          | `userService.findAll().get();`                                                | GET /resource                                                 |
 |                                                 | `userService.findById(123).get();`                                            | GET /resource/:id                                             |
 
@@ -161,6 +164,28 @@ SearchQuery (extended from GetQuery class so you can use the modifiers above wit
 |                                                                                                                                             | `userService.findWhere('id', [1,2,3]).remove();`                                    | DELETE /resource/search?id=1,2,3                                 |
 |                                                                                                                                             | `userService.findWhere('name', ['abc', 'def']).remove();`                           | DELETE /resource/search?name=abc,def                             |
 | `patch(resource: T): Promise<T \| ListResponse<T>>` Batch PATCH                                                                             | `userService.findWhere('id', [3, 4]).patch(<User>{is_banned: 1});`                  | PATCH /resource/search?id=3,4 with request body { is_banned: 1 } |
+
+Raw calls. The following just pass through to httpClient in the resource service. This way you won't need to re-build the api url.
+
+| Method                                                          | Example                                               | Endpoint                                             |
+| --------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------- |
+| `rawGet(path: string, options: HttpClientOptions)`              | `userService.rawGet('admin')`                         | GET /resource/admin                                  |
+| `rawPost(path: string, data: any, options: HttpClientOptions)`  | `userService.rawPost('admin', { name: 'John Doe'});`  | POST /resource/admin with body { name: 'John Doe' }  |
+| `rawPut(path: string, data: any, options: HttpClientOptions)`   | `userService.rawPut('admin', { name: 'John Doe'});`   | PUT /resource/admin with body { name: 'John Doe' }   |
+| `rawPatch(path: string, data: any, options: HttpClientOptions)` | `userService.rawPatch('admin', { name: 'John Doe'});` | PATCH /resource/admin with body { name: 'John Doe' } |
+| `rawDelete(path: string, options: HttpClientOptions)`           | `userService.rawDelete('123')`                        | DELETE /resource/123                                 |
+
+```ts
+HttpClientOptions is the options object you pass to httpClient:
+{
+  headers?: HttpHeaders;
+  observe?: 'body';
+  params?: HttpParams;
+  reportProgress?: boolean;
+  responseType: 'arraybuffer';
+  withCredentials?: boolean;
+}
+```
 
 ## API Mapping Details/Examples
 
@@ -473,6 +498,33 @@ userService.findAll().orderBy('name', 'asc').orderBy('email', 'desc').get();`
 // GET /resource?orderBy=[[name,asc],[email,desc]] (%5B%5Bname%2Casc%5D%2C%5Bemail%2Cdesc%5D%5D) URL encoded
 ```
 
+### header(key: string, value: string)
+
+header() allows you to add header to the ajax call
+
+```ts
+userService.findAll().header('Authorization', 'bearer token').get();`
+// GET /resource with header 'Authorization' and value 'bearer token'
+```
+
+### param(key: string, value: string)
+
+param() allows you to add additional Param to the ajax call. This gets added after the other params (limit, page, etc).
+
+```ts
+userService.findAll().param('q', '123').get();`
+// GET /resource?q=123
+```
+
+### fresh()
+
+fresh() adds 'no-cache' header with value '1'. I typically use this in a Caching HttpInterceptor (per angular doc here: https://angular.io/guide/http#caching) to skip caching if it sees no-cache header
+
+```ts
+userService.findAll().fresh().get();`
+// GET /resource with header no-cache of value 1
+```
+
 ## SearchQuery modifiers
 
 ### andWhere(field: string, value: string \| number)
@@ -488,9 +540,15 @@ userService
 // GET /resource/search?first_name=abc&last_name=123&age=%3E33
 ```
 
-## Flat API (an opinion)
+## Raw calls
 
-After using several back-end frameworks and working on various old and new projects, I've found having a flat API simplifies routing configurations and their guards. Previously I have seen deeply nested path which makes it harder for service discovery and managing their security structure. For example, some API path might look like the following:
+The following pass through the httpClient in a ResourceService so you don't have to re-build the apiUrl:
+
+`.rawGet()
+
+## Flat API/CQRS
+
+After using several back-end frameworks and working on various old and new projects, I've found having a flat API simplifies routing configurations and their guards. Previously I have seen deeply nested path which makes it harder for service discovery and managing their authentication structure. For example, some API path might look like the following:
 
 ```
 HTTP GET /user/<id>/follower             // To get a list of followers for user <id>
@@ -522,11 +580,12 @@ Then potentially I can perform the following calls:
 HTTP GET /follower/search?user=<id>                       // To get a list of followers for user <id>
 HTTP GET /follower/<fid>                                  // Get follower id assuming fid is unique (with uuid)
 HTTP GET /follower/search?user=<id>&follower=<fid>        // Or if not unique
-HTTP POST /ban-follower/search?user=<id>&follower=<fid>   // CREATE ban-follower action where user <id> and follower <fId>
+HTTP POST /ban-follower/search?user=<id>&follower=<fid>   // CREATE ban-follower action where user <id> and follower <fId> (CQRS style)
 ```
 
-Notice that to ban a follower it calls a POST (Create) to `/ban-follower/search?user=<id>&follower=<id>`. I've found this better than a POST or GET to the nested `/user/<id>/follower/<id>/ban` for the following reasons:
+Notice that to ban a follower it calls a POST (Create) to `/ban-follower/search?user=<id>&follower=<id>`. These are commands and follows CQRS style. I've found this better than a POST or GET to the nested `/user/<id>/follower/<id>/ban` for the following reasons:
 
+- CQRS specifies commands.
 - With the former, HTTP POST verb becomes unambiguous. It is called to _CREATE_ something. The call then becomes _create an entry for `ban-follower` for user `<id>` and follower `<fid>`_.
 - To remove a ban you just need to call the same URL and do HTTP DELETE. This call becomes _remove an entry for ban-follower for user `<id>` and follower `<fid>`_.
 - If later I want to remove the ability to ban followers I can just kill the route or the class that handles it (usually results in automatic 404). With the latter you'll probably have to find the method that bans followers inside some class (or a leak if you forget).
@@ -540,3 +599,7 @@ HTTP DELETE /token      // Destroys a token, i.e token is invalid, user is logge
 ```
 
 Pairing RsourceService with this convention makes it easy to wire up a back-end API urls and have the responses properly typed.
+
+## Upcoming
+
+- query(). This way you can chain something like userService.query().param('q', 'hello world').get() or userService.query().header('X-REFRESH', '123').post(somePath, body)

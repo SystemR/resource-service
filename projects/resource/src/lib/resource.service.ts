@@ -102,6 +102,27 @@ export class ResourceService {
   }
 
   /**
+   * Raw GET to apiUrl + '/' + path (passes to httpClient.get())
+   * Example: this.userService.rawGet('admin' options) and it will send POST to /user/admin a user object
+   * @param path path. If a path is specified, a '/' is pre-pended.
+   * @param options { headers?: HttpHeaders | { [header: string]: string | string[]; }; observe?: "body"; params?: HttpParams | { [param: string]: string | string[]; }; reportProgress?: boolean; responseType: "arraybuffer"; withCredentials?: boolean; }
+   */
+  rawGet(
+    path = '',
+    options?: {
+      headers?: HttpHeaders;
+      observe?: 'body';
+      params?: HttpParams;
+      reportProgress?: boolean;
+      responseType: 'arraybuffer';
+      withCredentials?: boolean;
+    }
+  ): Promise<any> {
+    const url = path ? '/' + path : '';
+    return this.http.get(this.apiUrl + url, options).toPromise();
+  }
+
+  /**
    * Maps to GET /resource/:id
    * @param id resource's id
    * @returns GetQuery
@@ -135,6 +156,28 @@ export class ResourceService {
   }
 
   /**
+   * Raw POST to apiUrl (passes to httpClient.post()).
+   * Example: this.userService.rawPost('admin', new User(), options) and it will send POST to /user/admin a user object
+   * @param path path. If a path is specified, a '/' is pre-pended.
+   * @param options { headers?: HttpHeaders | { [header: string]: string | string[]; }; observe?: "body"; params?: HttpParams | { [param: string]: string | string[]; }; reportProgress?: boolean; responseType: "arraybuffer"; withCredentials?: boolean; }
+   */
+  rawPost(
+    path = '',
+    data: any,
+    options?: {
+      headers?: HttpHeaders;
+      observe?: 'body';
+      params?: HttpParams;
+      reportProgress?: boolean;
+      responseType: 'arraybuffer';
+      withCredentials?: boolean;
+    }
+  ): Promise<any> {
+    const url = path ? '/' + path : '';
+    return this.http.post(this.apiUrl + url, data, options).toPromise();
+  }
+
+  /**
    * Maps to PUT on /resource/:id
    * @param resource an instance of type Resource to be updated on the back-end
    * @param headers optional HTTP headers
@@ -160,6 +203,28 @@ export class ResourceService {
           }
         );
     });
+  }
+
+  /**
+   * Raw PUT (passes to httpClient.put())
+   * Example: this.userService.rawPut('admin', new User(), options) and it will send PUT to /user/admin a user object
+   * @param path path. If a path is specified, a '/' is pre-pended.
+   * @param options { headers?: HttpHeaders | { [header: string]: string | string[]; }; observe?: "body"; params?: HttpParams | { [param: string]: string | string[]; }; reportProgress?: boolean; responseType: "arraybuffer"; withCredentials?: boolean; }
+   */
+  rawPut(
+    path = '',
+    data: any,
+    options?: {
+      headers?: HttpHeaders;
+      observe?: 'body';
+      params?: HttpParams;
+      reportProgress?: boolean;
+      responseType: 'arraybuffer';
+      withCredentials?: boolean;
+    }
+  ): Promise<any> {
+    const url = path ? '/' + path : '';
+    return this.http.put(this.apiUrl + url, data, options).toPromise();
   }
 
   /**
@@ -190,6 +255,28 @@ export class ResourceService {
   }
 
   /**
+   * Raw PATCH (passes to httpClient.patch())
+   * Example: this.userService.rawPatch('admin', new User(), options) and it will send PATCH to /user/admin a user object
+   * @param path path. If a path is specified, a '/' is pre-pended.
+   * @param options { headers?: HttpHeaders | { [header: string]: string | string[]; }; observe?: "body"; params?: HttpParams | { [param: string]: string | string[]; }; reportProgress?: boolean; responseType: "arraybuffer"; withCredentials?: boolean; }
+   */
+  rawPatch(
+    path = '',
+    data: any,
+    options?: {
+      headers?: HttpHeaders;
+      observe?: 'body';
+      params?: HttpParams;
+      reportProgress?: boolean;
+      responseType: 'arraybuffer';
+      withCredentials?: boolean;
+    }
+  ): Promise<any> {
+    const url = path ? '/' + path : '';
+    return this.http.patch(this.apiUrl + url, data, options).toPromise();
+  }
+
+  /**
    * Maps to DELETE /resource/:id
    * @param resource an instance of type Resource to delete
    * @param headers optional HTTP headers
@@ -211,6 +298,27 @@ export class ResourceService {
           }
         );
     });
+  }
+
+  /**
+   * Raw DELETE (passes to httpClient.delete())
+   * Example: this.userService.rawDelete('123', options) and it will send DELETE to /user/123
+   * @param path path. If a path is specified, a '/' is pre-pended.
+   * @param options { headers?: HttpHeaders | { [header: string]: string | string[]; }; observe?: "body"; params?: HttpParams | { [param: string]: string | string[]; }; reportProgress?: boolean; responseType: "arraybuffer"; withCredentials?: boolean; }
+   */
+  rawDelete(
+    path = '',
+    options?: {
+      headers?: HttpHeaders;
+      observe?: 'body';
+      params?: HttpParams;
+      reportProgress?: boolean;
+      responseType: 'arraybuffer';
+      withCredentials?: boolean;
+    }
+  ): Promise<any> {
+    const url = path ? '/' + path : '';
+    return this.http.delete(this.apiUrl + url, options).toPromise();
   }
 
   /**
@@ -280,7 +388,7 @@ export class ResourceService {
     field: string,
     value: number | string | Array<number | string>
   ): SearchQuery<T> {
-    return new SearchQuery<T>(field, value, this.search.bind(this));
+    return new SearchQuery<T>(this.search.bind(this), field, value);
   }
 
   /**

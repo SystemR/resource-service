@@ -63,6 +63,7 @@ describe('ResourceService', () => {
   // Instantiate the service before each test
   beforeEach(inject([Injector], (injector: Injector) => {
     userService = new UserService(injector);
+    expect(userService).toBeTruthy();
   }));
 
   /**
@@ -144,16 +145,46 @@ describe('ResourceService', () => {
     }));
 
     it('should do list() (GET /user) with params and headers', async(() => {
-      userService.list(
-        new HttpParams().set('page', '2'),
-        new HttpHeaders().set('no-cache', '1')
-      );
+      userService
+        .list(
+          new HttpParams().set('page', '2'),
+          new HttpHeaders().set('no-cache', '1')
+        )
+        .then(
+          _ => {
+            expect(true).toBe(true);
+          },
+          _ => {}
+        );
 
       httpMock.expectOne((req: HttpRequest<any>) => {
         return (
           req.method === 'GET' &&
           req.url === '/user' &&
+          req.params.get('page') === '2' &&
           req.headers.get('no-cache') !== undefined
+        );
+      });
+      httpMock.verify();
+    }));
+
+    it('should handle param()', async(() => {
+      userService
+        .findAll()
+        .param('q', 'keyword')
+        .get()
+        .then(
+          (_: ListResponse<User>) => {},
+          _ => {
+            throw new Error('Should not throw');
+          }
+        );
+
+      httpMock.expectOne((req: HttpRequest<any>) => {
+        return (
+          req.method === 'GET' &&
+          req.url === '/user' &&
+          req.params.get('q') === 'keyword'
         );
       });
       httpMock.verify();
@@ -1121,9 +1152,9 @@ describe('ResourceService', () => {
       httpMock.verify();
     }));
 
-    it('should handle force fresh', async(() => {
+    it('should handle force fresh', async(async () => {
       // generally my projects have an HttpInterceptor that loads from cache but skips when the request header no-cache is set
-      userService
+      await userService
         .findAll()
         .fresh()
         .get();
@@ -1135,6 +1166,104 @@ describe('ResourceService', () => {
           req.headers.get('no-cache') !== undefined
         );
       });
+      httpMock.verify();
+    }));
+  });
+
+  describe('Raw calls', () => {
+    it('should do raw GET /user/admin', async(() => {
+      userService.rawGet('admin').then((user: User) => {
+        expect(user.id).toBe(123);
+      });
+
+      httpMock
+        .expectOne({
+          url: '/user/admin',
+          method: 'GET'
+        })
+        .flush(<User>{
+          id: 123,
+          name: 'User 1'
+        });
+
+      httpMock.verify();
+    }));
+
+    it('should do raw POST /user/admin', async(() => {
+      const newUser = new User();
+      newUser.name = 'John Doe';
+      userService.rawPost('admin', newUser).then((user: User) => {
+        expect(user.id).toBe(123);
+        expect(user.name).toBe(newUser.name);
+      });
+
+      httpMock
+        .expectOne({
+          url: '/user/admin',
+          method: 'POST'
+        })
+        .flush(<User>{
+          id: 123,
+          name: newUser.name
+        });
+
+      httpMock.verify();
+    }));
+
+    it('should do raw PUT /user/admin', async(() => {
+      const newUser = new User();
+      newUser.name = 'John Doe';
+      userService.rawPut('admin', newUser).then((user: User) => {
+        expect(user.id).toBe(123);
+        expect(user.name).toBe(newUser.name);
+      });
+
+      httpMock
+        .expectOne({
+          url: '/user/admin',
+          method: 'PUT'
+        })
+        .flush(<User>{
+          id: 123,
+          name: newUser.name
+        });
+
+      httpMock.verify();
+    }));
+
+    it('should do raw PATCH /user/admin', async(() => {
+      const newUser = new User();
+      newUser.name = 'John Doe';
+      userService.rawPatch('admin', newUser).then((user: User) => {
+        expect(user.id).toBe(123);
+        expect(user.name).toBe(newUser.name);
+      });
+
+      httpMock
+        .expectOne({
+          url: '/user/admin',
+          method: 'PATCH'
+        })
+        .flush(<User>{
+          id: 123,
+          name: newUser.name
+        });
+
+      httpMock.verify();
+    }));
+
+    it('should do raw DELETE to /user/123', async(() => {
+      userService.rawDelete('123').then(_ => {
+        expect(_).toBeFalsy();
+      });
+
+      httpMock
+        .expectOne({
+          url: '/user/123',
+          method: 'DELETE'
+        })
+        .flush(null, { status: 204, statusText: 'No Data' });
+
       httpMock.verify();
     }));
   });
