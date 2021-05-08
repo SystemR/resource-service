@@ -51,7 +51,7 @@
     "karma-jasmine": "^2.0.1",
     "karma-jasmine-html-reporter": "^1.4.2",
     "karma-mocha-reporter": "^2.2.5",
-    "ng-packagr": ">=4.6.0",
+    "ng-packagr": ">=10.1.1",
     "prettier": "^1.15.3",
     "pretty-quick": "^1.10.0",
     "protractor": "^5.4.2",
