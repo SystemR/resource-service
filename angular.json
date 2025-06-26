@@ -10,7 +10,7 @@
       "prefix": "rw",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:library",
+          "builder": "@angular-devkit/build-angular:ng-packagr",
           "options": {
             "tsConfig": "projects/resource/tsconfig.lib.json",
             "project": "projects/resource/ng-package.json"
