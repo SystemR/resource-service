@@ -1,12 +1,12 @@
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 
 import { ResourceConfigService } from './resource-config.service';
 
 @NgModule({
-  imports: [HttpClientModule],
-  providers: [ResourceConfigService],
+  imports: [],
+  providers: [ResourceConfigService, provideHttpClient()],
   declarations: [],
-  exports: [HttpClientModule]
+  exports: []
 })
 export class ResourceModule {}
