@@ -110,7 +110,7 @@ export class ResourceService {
     }
   ): Promise<any> {
     const url = path ? '/' + path : '';
-    return this.http.get(this.apiUrl + url, options).toPromise();
+    return lastValueFrom(this.http.get(this.apiUrl + url, options));
   }
 
   /**
@@ -294,7 +294,7 @@ export class ResourceService {
     }
   ): Promise<any> {
     const url = path ? '/' + path : '';
-    return this.http.delete(this.apiUrl + url, options).toPromise();
+    return lastValueFrom(this.http.delete(this.apiUrl + url, options));
   }
 
   /**
@@ -377,9 +377,7 @@ export class ResourceService {
   ): Promise<K | ListResponse<K>> {
     return lastValueFrom(
       this.http.post(this.apiUrl + '/upload', formData, { params, headers })
-    ).then((data: K | ListResponse<K>) => {
-      return data;
-    });
+    );
   }
 
   /**
@@ -398,9 +396,7 @@ export class ResourceService {
         params,
         headers
       })
-    ).then((data: K | ListResponse<K>) => {
-      return data;
-    });
+    );
   }
 
   generateListResponse<T extends Resource>(result): ListResponse<T> {
