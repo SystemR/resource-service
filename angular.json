@@ -10,7 +10,7 @@
       "prefix": "rw",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-ng-packagr:build",
+          "builder": "@angular-devkit/build-angular:library",
           "options": {
             "tsConfig": "projects/resource/tsconfig.lib.json",
             "project": "projects/resource/ng-package.json"
@@ -19,8 +19,10 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "projects/resource/src/test.ts",
+            "polyfills": ["zone.js", "zone.js/testing"],
             "tsConfig": "projects/resource/tsconfig.spec.json",
+            "inlineStyleLanguage": "scss",
+            "scripts": [],
             "karmaConfig": "projects/resource/karma.conf.js"
           }
         },
@@ -36,6 +38,5 @@
         }
       }
     }
-  },
-  "defaultProject": "resource"
+  }
 }

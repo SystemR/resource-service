@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injector } from '@angular/core';
 
+import { lastValueFrom, Observable } from 'rxjs';
 import { Resource } from './resource';
 import { GetQuery, SearchQuery } from './resource-builders';
 import { ResourceConfigService } from './resource-config.service';
@@ -52,16 +53,11 @@ export class ResourceService {
     params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<ListResponse<T>> {
-    return new Promise((res, rej) => {
-      this.http.get(this.apiUrl, { params, headers }).subscribe(
-        (result: ListResponse<T>) => {
-          res(this.generateListResponse(result));
-        },
-        err => {
-          rej(err);
-        }
-      );
-    });
+    return lastValueFrom(this.http.get(this.apiUrl, { params, headers })).then(
+      (result: ListResponse<T>) => {
+        return this.generateListResponse(result);
+      }
+    );
   }
 
   /**
@@ -84,20 +80,15 @@ export class ResourceService {
     params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<T> {
-    return new Promise((res, rej) => {
-      this.http.get(this.apiUrl + '/' + id, { params, headers }).subscribe(
-        (data: T) => {
-          const item = new this.modelClass();
-          Object.assign(item, data);
-          if (item.onInstantiated) {
-            item.onInstantiated();
-          }
-          res(item);
-        },
-        err => {
-          rej(err);
-        }
-      );
+    return lastValueFrom(
+      this.http.get(this.apiUrl + '/' + id, { params, headers })
+    ).then((data: T) => {
+      const item = new this.modelClass();
+      Object.assign(item, data);
+      if (item.onInstantiated) {
+        item.onInstantiated();
+      }
+      return item;
     });
   }
 
@@ -174,7 +165,7 @@ export class ResourceService {
     }
   ): Promise<any> {
     const url = path ? '/' + path : '';
-    return this.http.post(this.apiUrl + url, data, options).toPromise();
+    return lastValueFrom(this.http.post(this.apiUrl + url, data, options));
   }
 
   /**
@@ -188,20 +179,16 @@ export class ResourceService {
     params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<T> {
-    return new Promise((res, rej) => {
-      this.http
-        .put(this.apiUrl + '/' + resource.id, resource, { params, headers })
-        .subscribe(
-          (data: T) => {
-            if (data) {
-              Object.assign(resource, data);
-            }
-            res(resource);
-          },
-          err => {
-            rej(err);
-          }
-        );
+    return lastValueFrom(
+      this.http.put(this.apiUrl + '/' + resource.id, resource, {
+        params,
+        headers
+      })
+    ).then((data: T) => {
+      if (data) {
+        Object.assign(resource, data);
+      }
+      return resource;
     });
   }
 
@@ -224,7 +211,7 @@ export class ResourceService {
     }
   ): Promise<any> {
     const url = path ? '/' + path : '';
-    return this.http.put(this.apiUrl + url, data, options).toPromise();
+    return lastValueFrom(this.http.put(this.apiUrl + url, data, options));
   }
 
   /**
@@ -237,20 +224,16 @@ export class ResourceService {
     params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<T> {
-    return new Promise((res, rej) => {
-      this.http
-        .patch(this.apiUrl + '/' + resource.id, resource, { params, headers })
-        .subscribe(
-          (data: T) => {
-            if (data) {
-              Object.assign(resource, data);
-            }
-            res(resource);
-          },
-          err => {
-            rej(err);
-          }
-        );
+    return lastValueFrom(
+      this.http.patch(this.apiUrl + '/' + resource.id, resource, {
+        params,
+        headers
+      })
+    ).then((data: T) => {
+      if (data) {
+        Object.assign(resource, data);
+      }
+      return resource;
     });
   }
 
@@ -273,7 +256,7 @@ export class ResourceService {
     }
   ): Promise<any> {
     const url = path ? '/' + path : '';
-    return this.http.patch(this.apiUrl + url, data, options).toPromise();
+    return lastValueFrom(this.http.patch(this.apiUrl + url, data, options));
   }
 
   /**
@@ -286,17 +269,10 @@ export class ResourceService {
     params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<T> {
-    return new Promise((res, rej) => {
-      this.http
-        .delete(this.apiUrl + '/' + resource.id, { params, headers })
-        .subscribe(
-          (_: T) => {
-            res(resource);
-          },
-          err => {
-            rej(err);
-          }
-        );
+    return lastValueFrom(
+      this.http.delete(this.apiUrl + '/' + resource.id, { params, headers })
+    ).then((_: T) => {
+      return resource;
     });
   }
 
@@ -333,47 +309,45 @@ export class ResourceService {
     method: 'get' | 'patch' | 'delete' = 'get',
     resource?: T,
     headers?: HttpHeaders
-  ): Promise<ListResponse<T>> {
+  ): Promise<ListResponse<T> | void> {
     return new Promise((res, rej) => {
-      let httpRequest = null;
+      let httpRequest: Observable<Object> = null;
 
       const opts = { params: searchParams, headers };
 
       if (method === 'patch') {
-        httpRequest = this.http[method](
-          this.apiUrl + '/search',
-          resource,
-          opts
-        );
-      } else {
+        httpRequest = this.http.patch(this.apiUrl + '/search', resource, opts);
+      } else if (method === 'get') {
         // get || delete
-        httpRequest = this.http[method](this.apiUrl + '/search', opts);
+        httpRequest = this.http.get(this.apiUrl + '/search', opts);
+      } else if (method === 'delete') {
+        httpRequest = this.http.delete(this.apiUrl + '/search', opts);
       }
 
       if (method === 'get') {
         /**
-         * get returns search results
+         * GET returns search results
          */
-        httpRequest.subscribe(
-          (result: ListResponse<T>) => {
+        httpRequest.subscribe({
+          next: result => {
             res(this.generateListResponse(result));
           },
-          err => {
+          error: err => {
             rej(err);
           }
-        );
+        });
       } else {
         /**
-         * patch and delete only return 203 for successful patch or delete
+         * PATCH and DELETE only return 203 for successful patch or delete
          */
-        httpRequest.subscribe(
-          result => {
+        httpRequest.subscribe({
+          next: _ => {
             res();
           },
-          err => {
+          error: err => {
             rej(err);
           }
-        );
+        });
       }
     });
   }
@@ -401,17 +375,10 @@ export class ResourceService {
     params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<K | ListResponse<K>> {
-    return new Promise((res, rej) => {
-      this.http
-        .post(this.apiUrl + '/upload', formData, { params, headers })
-        .subscribe(
-          (data: K | ListResponse<K>) => {
-            res(data);
-          },
-          err => {
-            rej(err);
-          }
-        );
+    return lastValueFrom(
+      this.http.post(this.apiUrl + '/upload', formData, { params, headers })
+    ).then((data: K | ListResponse<K>) => {
+      return data;
     });
   }
 
@@ -426,20 +393,13 @@ export class ResourceService {
     params?: HttpParams,
     headers?: HttpHeaders
   ): Promise<K | ListResponse<K>> {
-    return new Promise((res, rej) => {
-      this.http
-        .post(this.apiUrl + '/' + resource.id + '/upload', formData, {
-          params,
-          headers
-        })
-        .subscribe(
-          (data: K | ListResponse<K>) => {
-            res(data);
-          },
-          err => {
-            rej(err);
-          }
-        );
+    return lastValueFrom(
+      this.http.post(this.apiUrl + '/' + resource.id + '/upload', formData, {
+        params,
+        headers
+      })
+    ).then((data: K | ListResponse<K>) => {
+      return data;
     });
   }
 
